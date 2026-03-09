@@ -1,0 +1,547 @@
+html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcards -</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 20px;
+            color: white;
+        }
+
+        header h1 {
+            font-size: clamp(1.8rem, 5vw, 3rem);
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            background: linear-gradient(90deg, #f7971e, #ffd200);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            color: #a0aec0;
+            font-size: clamp(0.85rem, 2.5vw, 1rem);
+            letter-spacing: 1px;
+        }
+
+        .counter {
+            display: inline-block;
+            margin-top: 15px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 6px 20px;
+            color: #ffd200;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 30px;
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 0 10px;
+        }
+
+        .card-wrapper {
+            perspective: 1000px;
+            height: 220px;
+        }
+
+        .card {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            transition: transform 0.7s cubic-bezier(0.4, 0.2, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-front,
+        .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        /* ---- FRENTE ---- */
+        .card-front {
+            background: linear-gradient(145deg, #ffffff 0%, #f0f4ff 100%);
+            border: 3px solid transparent;
+            background-clip: padding-box;
+        }
+
+        .card-front::before {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 22px;
+            background: linear-gradient(135deg, #f7971e, #ffd200);
+            z-index: -1;
+        }
+
+        .card-front .emoji {
+            font-size: 2.8rem;
+            margin-bottom: 12px;
+            display: block;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+        }
+
+        .card-front .word {
+            font-size: clamp(1.4rem, 4vw, 1.8rem);
+            font-weight: 800;
+            color: #1a1a2e;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .card-front .hint {
+            margin-top: 10px;
+            font-size: 0.75rem;
+            color: #a0aec0;
+            letter-spacing: 1px;
+        }
+
+        .flip-icon {
+            position: absolute;
+            bottom: 14px;
+            right: 18px;
+            font-size: 1.2rem;
+            opacity: 0.4;
+        }
+
+        /* ---- REVERSO ---- */
+        .card-back {
+            background: linear-gradient(145deg, #1a1a2e, #16213e);
+            transform: rotateY(180deg);
+            border: 2px solid rgba(247, 151, 30, 0.4);
+        }
+
+        .card-back .translation {
+            font-size: clamp(1.2rem, 3.5vw, 1.6rem);
+            font-weight: 800;
+            color: #ffd200;
+            margin-bottom: 14px;
+            letter-spacing: 1px;
+        }
+
+        .card-back .divider {
+            width: 50px;
+            height: 2px;
+            background: linear-gradient(90deg, #f7971e, #ffd200);
+            border-radius: 2px;
+            margin-bottom: 14px;
+        }
+
+        .card-back .context {
+            font-size: clamp(0.78rem, 2.2vw, 0.9rem);
+            color: #cbd5e0;
+            font-style: italic;
+            line-height: 1.5;
+            padding: 10px 5px;
+        }
+
+        .card-back .context span.highlight {
+            color: #f7971e;
+            font-weight: 700;
+            font-style: normal;
+        }
+
+        /* ---- BOTONES ---- */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 20px auto 40px;
+            max-width: 600px;
+            padding: 0 20px;
+        }
+
+        .btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 50px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #f7971e, #ffd200);
+            color: #1a1a2e;
+            box-shadow: 0 4px 20px rgba(247, 151, 30, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(247, 151, 30, 0.6);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-3px);
+        }
+
+        /* ---- PROGRESS BAR ---- */
+        .progress-section {
+            max-width: 500px;
+            margin: 0 auto 20px;
+            padding: 0 20px;
+            text-align: center;
+        }
+
+        .progress-label {
+            color: #a0aec0;
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f7971e, #ffd200);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+
+        /* ---- BADGE categoría ---- */
+        .category-badge {
+            position: absolute;
+            top: 14px;
+            left: 18px;
+            background: linear-gradient(135deg, #f7971e, #ffd200);
+            color: #1a1a2e;
+            font-size: 0.65rem;
+            font-weight: 800;
+            padding: 3px 10px;
+            border-radius: 20px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* ---- FOOTER ---- */
+        footer {
+            text-align: center;
+            color: #4a5568;
+            font-size: 0.8rem;
+            padding: 20px;
+            letter-spacing: 1px;
+        }
+
+        /* ---- RESPONSIVE ---- */
+        @media (max-width: 600px) {
+            .cards-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            .card-wrapper {
+                height: 200px;
+            }
+        }
+
+        @media (min-width: 601px) and (max-width: 900px) {
+            .cards-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 901px) and (max-width: 1200px) {
+            .cards-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        /* ---- ANIMACIÓN entrada ---- */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card-wrapper {
+            animation: fadeInUp 0.5s ease both;
+        }
+
+        .card-wrapper:nth-child(1)  { animation-delay: 0.05s; }
+        .card-wrapper:nth-child(2)  { animation-delay: 0.10s; }
+        .card-wrapper:nth-child(3)  { animation-delay: 0.15s; }
+        .card-wrapper:nth-child(4)  { animation-delay: 0.20s; }
+        .card-wrapper:nth-child(5)  { animation-delay: 0.25s; }
+        .card-wrapper:nth-child(6)  { animation-delay: 0.30s; }
+        .card-wrapper:nth-child(7)  { animation-delay: 0.35s; }
+        .card-wrapper:nth-child(8)  { animation-delay: 0.40s; }
+        .card-wrapper:nth-child(9)  { animation-delay: 0.45s; }
+        .card-wrapper:nth-child(10) { animation-delay: 0.50s; }
+        .card-wrapper:nth-child(11) { animation-delay: 0.55s; }
+        .card-wrapper:nth-child(12) { animation-delay: 0.60s; }
+        .card-wrapper:nth-child(13) { animation-delay: 0.65s; }
+        .card-wrapper:nth-child(14) { animation-delay: 0.70s; }
+        .card-wrapper:nth-child(15) { animation-delay: 0.75s; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <p style="text-align: center;">INSTITUCIÓN EDUCATIVA CISNEROS<br/> LICEO CISNEROS<br/> LENGURA EXTRANJERA - INGLÉS-<br/> GRADO 11°</p>
+        <h1>📚 Vocabulary Flashcards</h1>
+        <p>Tap a card to practice the vocabulary</p>
+        <div class="counter" id="flipCounter">🔄 Revealed: 0 / 15</div>
+    </header>
+
+    <!-- Barra de progreso -->
+    <div class="progress-section">
+        <p class="progress-label">PROGRESS</p>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+    </div>
+
+    <!-- Botones de control -->
+    <div class="controls">
+        <button class="btn btn-primary" onclick="flipAll()">🔄 Flip All</button>
+        <button class="btn btn-secondary" onclick="resetAll()">↺ Reset All</button>
+    </div>
+
+    <!-- Grid de tarjetas -->
+    <div class="cards-grid" id="cardsGrid"></div>
+
+    <footer>
+        Vocabulary English Flashcards · A1–A2 Level<br/>
+        Designed by professor Edgar Herrera Morales with tecnology <a href="https://www.pollinations.ai">Pollinations</a> and <a href="www.claude.ai">Claude.ai</a>Anthropic Claude.ai Sonnet 4.6
+    </footer>
+
+    <script>
+        const cards = [
+            {
+                word: "Math",
+                emoji: "🔢",
+                translation: "Matemáticas",
+                context: '"I\'m good at <span class="highlight">Math</span>."',
+                category: "Noun"
+            },
+            {
+                word: "Science",
+                emoji: "🔬",
+                translation: "Ciencias",
+                context: '"We do experiments in <span class="highlight">Science</span> class."',
+                category: "Noun"
+            },
+            {
+                word: "History",
+                emoji: "🏛️",
+                translation: "Historia",
+                context: '"<span class="highlight">History</span> is my favorite subject."',
+                category: "Noun"
+            },
+            {
+                word: "Geography",
+                emoji: "🗺️",
+                translation: "Geografía",
+                context: '"We learned about maps in <span class="highlight">Geography</span>."',
+                category: "Noun"
+            },
+            {
+                word: "English",
+                emoji: "🇬🇧",
+                translation: "Inglés",
+                context: '"I study <span class="highlight">English</span> every day."',
+                category: "Noun"
+            },
+            {
+                word: "Art",
+                emoji: "🎨",
+                translation: "Arte",
+                context: '"I love <span class="highlight">Art</span> because I can paint."',
+                category: "Noun"
+            },
+            {
+                word: "P.E.",
+                emoji: "⚽",
+                translation: "Educación Física",
+                context: '"We play soccer in <span class="highlight">P.E.</span>"',
+                category: "Noun"
+            },
+            {
+                word: "Music",
+                emoji: "🎵",
+                translation: "Música",
+                context: '"<span class="highlight">Music</span> class is fun!"',
+                category: "Noun"
+            },
+            {
+                word: "Subject",
+                emoji: "📖",
+                translation: "Materia / Asignatura",
+                context: '"What\'s your favorite <span class="highlight">subject</span>?"',
+                category: "Noun"
+            },
+            {
+                word: "Favorite",
+                emoji: "⭐",
+                translation: "Favorito / a",
+                context: '"My <span class="highlight">favorite</span> class is English."',
+                category: "Adjective"
+            },
+            {
+                word: "Boring",
+                emoji: "🥱",
+                translation: "Aburrido / a",
+                context: '"I think Math is <span class="highlight">boring</span>."',
+                category: "Adjective"
+            },
+            {
+                word: "Interesting",
+                emoji: "🤩",
+                translation: "Interesante",
+                context: '"History is very <span class="highlight">interesting</span>."',
+                category: "Adjective"
+            },
+            {
+                word: "Difficult / Hard",
+                emoji: "😤",
+                translation: "Difícil",
+                context: '"Chemistry is <span class="highlight">difficult</span>."',
+                category: "Adjective"
+            },
+            {
+                word: "Easy",
+                emoji: "😊",
+                translation: "Fácil",
+                context: '"Art is <span class="highlight">easy</span> for me."',
+                category: "Adjective"
+            },
+            {
+                word: "Because",
+                emoji: "💬",
+                translation: "Porque",
+                context: '"I like Science <span class="highlight">because</span> it\'s interesting."',
+                category: "Connector"
+            }
+        ];
+
+        let flippedCount = 0;
+        const flippedSet = new Set();
+
+        function buildCards() {
+            const grid = document.getElementById('cardsGrid');
+            grid.innerHTML = '';
+            cards.forEach((card, index) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'card-wrapper';
+                wrapper.innerHTML = `
+                    <div class="card" id="card-${index}" onclick="flipCard(${index})">
+                        <div class="card-front">
+                            <span class="category-badge">${card.category}</span>
+                            <span class="emoji">${card.emoji}</span>
+                            <span class="word">${card.word}</span>
+                            <span class="hint">↻ Tap to reveal</span>
+                            <span class="flip-icon">🔁</span>
+                        </div>
+                        <div class="card-back">
+                            <span class="translation">${card.translation}</span>
+                            <div class="divider"></div>
+                            <p class="context">${card.context}</p>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(wrapper);
+            });
+        }
+
+        function flipCard(index) {
+            const card = document.getElementById(`card-${index}`);
+            card.classList.toggle('flipped');
+
+            if (card.classList.contains('flipped')) {
+                flippedSet.add(index);
+            } else {
+                flippedSet.delete(index);
+            }
+
+            updateCounter();
+        }
+
+        function updateCounter() {
+            flippedCount = flippedSet.size;
+            document.getElementById('flipCounter').textContent = `🔄 Revealed: ${flippedCount} / ${cards.length}`;
+            const pct = (flippedCount / cards.length) * 100;
+            document.getElementById('progressFill').style.width = pct + '%';
+        }
+
+        function flipAll() {
+            cards.forEach((_, index) => {
+                const card = document.getElementById(`card-${index}`);
+                card.classList.add('flipped');
+                flippedSet.add(index);
+            });
+            updateCounter();
+        }
+
+        function resetAll() {
+            cards.forEach((_, index) => {
+                const card = document.getElementById(`card-${index}`);
+                card.classList.remove('flipped');
+            });
+            flippedSet.clear();
+            updateCounter();
+        }
+
+        // Inicializar
+        buildCards();
+    </script>
+
+</body>
+</html>
